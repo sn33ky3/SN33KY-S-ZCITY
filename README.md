@@ -5,6 +5,7 @@
 ## About
 
 RaySn33ky'S ZCITY is a Garry’s Mod server built around immersive systems, custom gameplay mechanics, and a continuously evolving player experience.
+Based on modifications from VOTTUR's Z-City fork
 
 Core focus:
 - Realistic, responsive in-game interactions
@@ -51,3 +52,4 @@ Original project:
 https://github.com/uzelezz123/Z-City
 
 This project is a continuation with modifications, improvements, and additional systems.
+
