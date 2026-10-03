@@ -17,7 +17,7 @@ SolidMapVote["Config"]["Autostart Reminder"] = 3 * 60 -- 3 minutes
 SolidMapVote["Config"]["Time Left Commands"] = {"!timeleft", "/timeleft", ".timeleft"}
 
 -- Map Prefixes to include
-SolidMapVote["Config"]["Map Prefix"] = {"ttt", "rp", "gm", "mu", "hmcd", "de", "cs", "zc"}
+SolidMapVote["Config"]["Map Prefix"] = {"zc", "ttt", "hmcd", "mu"}
 
 -- Helper Colors 
 local namecolor = {
@@ -80,8 +80,8 @@ SolidMapVote["Config"]["Show Map Play Count"] = true
 -- Custom/manual map pool. When true, maps are loaded from playable_maps.json
 -- (garrysmod/data/map_registry/playable_maps.json). When false, maps are
 -- collected from maps/*.bsp using Map Prefix / Ignore Prefix.
-SolidMapVote["Config"]["Custom Map Pool"] = true
-SolidMapVote["Config"]["Manual Map Pool"] = true
+SolidMapVote["Config"]["Custom Map Pool"] = false
+SolidMapVote["Config"]["Manual Map Pool"] = false
 SolidMapVote["Config"]["Playable Maps Path"] = "map_registry/playable_maps.json"
 
 -- Fallback Map Pool used only if the JSON file is missing or empty
@@ -107,7 +107,7 @@ SolidMapVote["Config"]["Enable UnVote"] = true
 SolidMapVote["Config"]["Vote Commands"] = {"!rtv", "/rtv", ".rtv"}
 
 -- Nomination Settings
-SolidMapVote["Config"]["Ignore Prefix"] = true
+SolidMapVote["Config"]["Ignore Prefix"] = false
 SolidMapVote["Config"]["Nomination Commands"] = {"!nominate", "/nominate", ".nominate"}
 SolidMapVote["Config"]["Allow Nominations"] = true
 SolidMapVote["Config"]["Nomination Permissions"] = function(ply) return true end
