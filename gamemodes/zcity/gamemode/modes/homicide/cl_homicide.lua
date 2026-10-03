@@ -413,6 +413,26 @@ local hmcd_traitor_role_tips = {
 		"their limited tranquilizer should be saved for an armed marked target.",
 		"their decoys can sell a false death while they disappear into cover.",
 		"they are best at controlling and finishing isolated survivors, not starting a massacre."
+	},
+	traitor_hunter = {
+		"they can see fresh footprints; scatter people and they will follow the stragglers.",
+		"their crossbow is silent, so cover the noise of a fight while they pick targets off.",
+		"they carry few bolts; draw armed players out so they don't waste shots.",
+		"give them a rooftop angle and herd survivors through the open below.",
+		"their motion detector warns them of anyone closing in on their perch.",
+		"call out runners; the tracks lead straight to wherever they are hiding."
+	},
+	traitor_arsonist = {
+		"steer people into rooms with one exit before they light it.",
+		"their fire blocks doors; cut off whoever runs the other way.",
+		"stay out of the flames, they burn traitors just as well.",
+		"they have no gun; deal with armed players before the fire starts."
+	},
+	traitor_impostor = {
+		"back up their story that they are the Medic.",
+		"send the wounded to them; their treatment is a syringe.",
+		"two people wear rubber gloves; help discredit the real Medic.",
+		"they can barely fight, so cover them if they get exposed."
 	}
 }
 
@@ -520,6 +540,25 @@ local hmcd_traitor_self_tip_openers = {
 		"Use isolated prey to refill stamina and move quietly;",
 		"Use your tranquilizer on the marked target who can fight back;",
 		"Leave a death decoy before changing your hunting route;"
+	},
+	traitor_hunter = {
+		"Follow fresh footprints to whoever split off from the group;",
+		"Grapple onto a roof and wait for the tracks to come to you;",
+		"Make every bolt count, you only carry a handful;",
+		"Check the motion detector before you commit to a shot;",
+		"Let the crossbow's silence keep the crowd calm;"
+	},
+	traitor_arsonist = {
+		"Pick a room with one exit before lighting anything;",
+		"Throw the molotov behind whoever is running away;",
+		"Never fight inside your own fire;",
+		"Save the second molotov for whoever chases you;"
+	},
+	traitor_impostor = {
+		"Offer treatment to whoever is hurt and alone;",
+		"Point at the other pair of rubber gloves before they point at you;",
+		"Keep the syringe for someone who trusts you;",
+		"Bandage someone in public to earn your cover;"
 	}
 }
 
@@ -534,7 +573,10 @@ local hmcd_traitor_role_colors = {
 	traitor_cannibal = Color(175, 45, 45),
 	traitor_terrorist = Color(255, 120, 35),
 	traitor_lastmanstanding = Color(255, 220, 80),
-	traitor_stalker = Color(80, 210, 255)
+	traitor_stalker = Color(80, 210, 255),
+	traitor_hunter = Color(150, 200, 70),
+	traitor_arsonist = Color(255, 95, 20),
+	traitor_impostor = Color(235, 235, 245)
 }
 
 local function get_hmcd_traitor_player_by_steamid(steamID)

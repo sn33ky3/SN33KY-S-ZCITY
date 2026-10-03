@@ -16,8 +16,10 @@ local color_faint = Color(255, 255, 255, 38)
 local MM_PAD = 4
 local MM_BEZEL = 3
 
-local GITHUB_URL = "GITHUB.COM/REALZORF/VOTTURS-ZCITY"
-local DISCORD_URL = "https://discord.gg/votturzcity"
+-- Names and links come from lua/homigrad/cl_branding.lua
+local function Brand(key)
+	return ZC_BRANDING and ZC_BRANDING[key] or ""
+end
 
 local function MenuScale(size)
 	local scale = math.Clamp(math.min(ScrW() / 1920, ScrH() / 1080), 0.78, 1.15)
@@ -52,12 +54,12 @@ local Selects = {
 		luaMenu:Close()
 	end},
 	{Title = "Workshop Collection", Func = function()
-		gui.OpenURL("https://steamcommunity.com/sharedfiles/filedetails/?id=3715931702")
-	end},
-	{Title = "Discord", Func = function() gui.OpenURL(DISCORD_URL) end},
+		gui.OpenURL(Brand("workshop"))
+	end, BrandURL = "workshop"},
+	{Title = "Discord", Func = function() gui.OpenURL(Brand("discord")) end, BrandURL = "discord"},
 	{Title = "Guide", Func = function()
-		gui.OpenURL("https://docs.google.com/document/d/1oVOleCQSrbfWddLKOgjAKD-EKpbS1dxCfNdCSUwNfn4")
-	end},
+		gui.OpenURL(Brand("guide"))
+	end, BrandURL = "guide"},
 	{Title = "Traitor Role", GamemodeOnly = true, OpensPanel = true, Func = function(luaMenu, pp)
 		if hg.SelectPlayerRole then hg.SelectPlayerRole("Traitor", nil, pp) end
 	end},
@@ -75,7 +77,7 @@ local Selects = {
 	end},
 	{Title = "Rules", Func = function() RunConsoleCommand("ulx", "motd") end},
 	{Title = "Store", Func = function() RunConsoleCommand("say", "!store") end},
-	{Title = "Support Us", Support = true, Func = function() gui.OpenURL("https://ko-fi.com/votturzcity") end},
+	{Title = "Support Us", Support = true, Func = function() gui.OpenURL(Brand("support")) end, BrandURL = "support"},
 	{Title = "Return", Func = function(luaMenu) luaMenu:Close() end},
 }
 
@@ -117,7 +119,6 @@ local splasheh = {
 	"ABSOLUTELY NO EXPLOITS",
 	"JUST ONE MORE HOTFIX",
 	"Слава Україні! Героям слава!",
-	"VOTTURS IN S&BOX SOON™",
 	"HL3 CONFIRMED",
 	"PURPLE AND BLACK NEVER DIES",
 	"WHY IS MY FPS 12",
@@ -136,10 +137,10 @@ local splasheh = {
 	"HE WAS ACTING WEIRD",
 	"HE WALKED TOWARDS ME",
 	"HE LOOKED AT ME FUNNY",
-	"WELCOME TO VOTTUR'S Z-CITY",
+	"WELCOME TO RAYSN33KY'S Z-CITY",
 	"ANOTHER DAY IN Z-CITY",
-	"VOTTUR IS WATCHING",
-	"VOTTUR KNOWS",
+	"RAYSN33KY IS WATCHING",
+	"RAYSN33KY KNOWS",
 	"ANGERED STILL SUCKS",
 	"KARMA IS A SOCIAL CONSTRUCT",
 	"TICKRATE IS JUST A NUMBER",
@@ -249,10 +250,36 @@ function PANEL:Init()
 			surface.DrawTexturedRect(innerPad, brandRowY - MenuScale(36), MenuScale(56), MenuScale(42))
 			draw.SimpleText("ZCITY", "ZC_MM_Title", innerPad + MenuScale(64), brandRowY, color_text, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
 		else
-			surface.SetFont("ZC_MM_Title")
-			local votturW = surface.GetTextSize("VOTTUR'S")
-			draw.SimpleText("VOTTUR'S", "ZC_MM_Title", innerPad, brandRowY, color_text, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
-			draw.SimpleText("ZCITY", "ZC_MM_Title", innerPad + votturW + MenuScale(18), brandRowY, color_text, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
+			local name, suffix = Brand("name"), Brand("suffix")
+			local gap = MenuScale(18)
+
+			-- Same font as the original title. If the name is too long for the
+			-- sidebar, make a smaller copy of that font so it still fits on one line.
+			local font = "ZC_MM_Title"
+			surface.SetFont(font)
+			local nameW = surface.GetTextSize(name)
+			local totalW = nameW + gap + surface.GetTextSize(suffix)
+			local maxW = w - innerPad * 2
+			if totalW > maxW then
+				local size = math.floor(MenuScale(72) * maxW / totalW)
+				if self.BrandFontSize ~= size then
+					self.BrandFontSize = size
+					surface.CreateFont("ZC_MM_TitleFit", {
+						font = "Bahnschrift",
+						size = size,
+						weight = 800,
+						extended = true,
+						antialias = true
+					})
+				end
+				font = "ZC_MM_TitleFit"
+				surface.SetFont(font)
+				nameW = surface.GetTextSize(name)
+				gap = math.floor(gap * maxW / totalW)
+			end
+
+			draw.SimpleText(name, font, innerPad, brandRowY, color_text, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
+			draw.SimpleText(suffix, font, innerPad + nameW + gap, brandRowY, color_text, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
 		end
 
 		draw.SimpleText(self.SplashText, "ZC_MM_Tiny", w * 0.5, layout.tagY, color_idle_dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
@@ -261,6 +288,7 @@ function PANEL:Init()
 	local visibleSelects = {}
 	for _, v in ipairs(Selects) do
 		if v.GamemodeOnly and engine.ActiveGamemode() ~= "zcity" then continue end
+		if v.BrandURL and Brand(v.BrandURL) == "" then continue end -- link not set in cl_branding.lua
 		visibleSelects[#visibleSelects + 1] = v
 	end
 
@@ -296,27 +324,34 @@ function PANEL:Init()
 	git:Dock(BOTTOM)
 	git:DockMargin(0, MenuScale(2), 0, MenuScale(8))
 	git:SetFont("ZC_MM_Tiny")
-	git:SetText(GITHUB_URL)
+	git:SetText(string.upper((string.gsub(Brand("github"), "^https?://", ""))))
 	git:SetTextColor(color_faint)
 	git:SetContentAlignment(4)
 	git:SetMouseInputEnabled(true)
 	git:SizeToContents()
+	if Brand("github") == "" then git:SetVisible(false) end -- set your fork in cl_branding.lua
 	function git:DoClick()
 		PlayMenuSound("shitty/tap_depress.wav", 0.09)
-		gui.OpenURL(GITHUB_URL)
+		gui.OpenURL(Brand("github"))
 	end
 	function git:Think()
 		self:SetTextColor(self:IsHovered() and color_crt_soft or color_faint)
 	end
 
-	local zteam = vgui.Create("DLabel", bottomDock)
-	zteam:Dock(BOTTOM)
-	zteam:DockMargin(0, 0, 0, MenuScale(4))
-	zteam:SetFont("ZC_MM_Tiny")
-	zteam:SetTextColor(color_idle_dim)
-	zteam:SetText("Vottur, Zorf, Patidinho")
-	zteam:SetContentAlignment(4)
-	zteam:SizeToContents()
+	-- Credits from cl_branding.lua, one label per line. Docking to BOTTOM stacks
+	-- upwards, so add them last line first to keep them in reading order.
+	local credits = ZC_BRANDING and ZC_BRANDING.credits or {}
+	if isstring(credits) then credits = {credits} end
+	for i = #credits, 1, -1 do
+		local zteam = vgui.Create("DLabel", bottomDock)
+		zteam:Dock(BOTTOM)
+		zteam:DockMargin(0, 0, 0, MenuScale(i == #credits and 4 or 1))
+		zteam:SetFont("ZC_MM_Tiny")
+		zteam:SetTextColor(color_idle_dim)
+		zteam:SetText(credits[i])
+		zteam:SetContentAlignment(4)
+		zteam:SizeToContents()
+	end
 
 	local contentX = sidebarX + sidebarW + MenuScale(20)
 	self.ContentX = contentX

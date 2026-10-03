@@ -106,6 +106,295 @@ function MODE.GiveJuggernautCrowbar(ply)
 	return crowbar
 end
 
+-- Hunter (RaySn33ky's Z-City): shared loadout for the normal and SOE variants.
+-- The Tracker ability itself lives in sv_hunter.lua / cl_hunter.lua.
+MODE.HunterBolts = 6
+
+function MODE.IsHunterRole(subrole)
+	return subrole == "traitor_hunter" or subrole == "traitor_hunter_soe"
+end
+
+local function HMCDGiveHunterLoadout(ply, soe)
+	local bow = ply:Give("weapon_hg_crossbow")
+	if IsValid(bow) then
+		-- concealed like the Last Man Standing's De Lisle, so it doesn't give you away
+		bow.shouldntDrawHolstered = true
+		bow:SetNWBool("ZCityPocketHolster", true)
+		ply:GiveAmmo(MODE.HunterBolts, bow:GetPrimaryAmmoType(), true)
+	else
+		ply:GiveAmmo(MODE.HunterBolts, "Armature", true)
+	end
+
+	ply:Give("weapon_sogknife")
+	ply:Give("weapon_grapplinghook")
+	ply:Give("weapon_hg_motiontracker")
+
+	if soe then
+		ply:Give("weapon_walkie_talkie")
+		ply.organism.recoilmul = 1
+	end
+
+	local inv = ply:GetNetVar("Inventory", {})
+	inv["Weapons"] = inv["Weapons"] or {}
+	inv["Weapons"]["hg_sling"] = true
+	inv["Weapons"]["hg_flashlight"] = true
+
+	ply:SetNetVar("Inventory", inv)
+end
+
+-- Rubber gloves (RaySn33ky's Z-City): the real Medic and the Impostor both wear them,
+-- so players can tell "a medic" apart, but not which one is real.
+-- The bare hands are switched on and their texture (the material named "hands") is
+-- recoloured to blue nitrile, using our own material in materials/raysn33ky/.
+-- The "ZCITY Clothing+" addon also has a 3D "medical_gloves" mesh, but it currently
+-- renders invisible (known bug in that addon). Set MODE.MedicGlovesUseMesh = true
+-- once the addon is fixed to use the 3D gloves on models that have them.
+MODE.MedicGloveMaterial = "raysn33ky/medic_gloves"
+MODE.MedicGlovesUseMesh = false
+
+if SERVER then
+	-- send the fallback glove material to joining players
+	resource.AddFile("materials/raysn33ky/medic_gloves.vmt")
+	resource.AddFile("materials/raysn33ky/medic_gloves.vtf")
+end
+
+local function HMCDFindHandsSubmodel(ent, wanted)
+	local hands = ent:FindBodygroupByName("HANDS")
+	if not hands or hands < 0 then return nil end
+
+	for _, bg in ipairs(ent:GetBodyGroups()) do
+		if bg.id == hands then
+			for index, name in pairs(bg.submodels) do
+				if name == wanted then return hands, index end
+			end
+		end
+	end
+
+	return hands, nil
+end
+
+-- material names are compared by their last path part, any folder, any case
+local function HMCDMatBaseName(path)
+	path = string.lower(string.Replace(path, "\\", "/"))
+	return string.match(path, "([^/]+)$") or path
+end
+
+local function HMCDRecolour(ent, basenames)
+	local applied = false
+	local mats = ent:GetMaterials()
+	for i = 1, #mats do
+		if basenames[HMCDMatBaseName(mats[i])] then
+			if ent:GetSubMaterial(i - 1) ~= MODE.MedicGloveMaterial then
+				ent:SetSubMaterial(i - 1, MODE.MedicGloveMaterial)
+			end
+			applied = true
+		end
+	end
+	return applied
+end
+
+-- the regular full-finger gloves every Z-City-style model ships with
+local GLOVE_SUBMODELS = {"reggloves_FIN_M", "reggloves_FIN_F"}
+local GLOVE_MATERIALS = {reggloves = true, wingloves = true}
+local BARE_SUBMODELS = {"hands", "hand_f", "hands_f", "hand"}
+local HAND_MATERIALS = {hands = true}
+
+-- Works on a player or on their ragdoll. Only changes what is different, so calling
+-- it repeatedly costs nothing on the network. Returns how the gloves were applied.
+local function HMCDPutOnRubberGloves(ent)
+	if not IsValid(ent) then return "invalid" end
+	if ent:IsPlayer() and not ent:Alive() then return "dead" end
+
+	-- 1) Clothing+ 3D medical gloves, only when enabled (they render invisible for now)
+	local hands, gloves = HMCDFindHandsSubmodel(ent, "medical_gloves")
+	if MODE.MedicGlovesUseMesh and hands and gloves then
+		if ent:GetBodygroup(hands) ~= gloves then ent:SetBodygroup(hands, gloves) end
+		return "medical_gloves mesh"
+	end
+
+	-- 2) the model's regular full-finger gloves, recoloured to surgical blue
+	if hands then
+		for _, name in ipairs(GLOVE_SUBMODELS) do
+			local _, idx = HMCDFindHandsSubmodel(ent, name)
+			if idx then
+				if ent:GetBodygroup(hands) ~= idx then ent:SetBodygroup(hands, idx) end
+				HMCDRecolour(ent, GLOVE_MATERIALS)
+				return "glove mesh (" .. name .. ")"
+			end
+		end
+	end
+
+	-- 3) fallback: bare hands with the hand texture recoloured
+	if hands then
+		local bare
+		for _, name in ipairs(BARE_SUBMODELS) do
+			local _, idx = HMCDFindHandsSubmodel(ent, name)
+			if idx then bare = idx break end
+		end
+		bare = bare or 0
+		if ent:GetBodygroup(hands) ~= bare then ent:SetBodygroup(hands, bare) end
+	end
+
+	return HMCDRecolour(ent, HAND_MATERIALS) and "hand texture" or "unsupported model"
+end
+
+local function HMCDWantsRubberGloves(ply)
+	if ply.isTraitor then
+		return MODE.IsImpostorRole and MODE.IsImpostorRole(ply.SubRole) or false
+	end
+	return ply.Profession == "medic"
+end
+
+function MODE.ApplyMedicGloves(ply)
+	HMCDPutOnRubberGloves(ply)
+end
+
+if SERVER then
+	-- Z-City re-applies appearance at several moments after spawning (late appearance
+	-- replay, permamodel, wildwest outfits...). Instead of guessing when, keep checking.
+	timer.Create("HMCD_MedicGlovesEnforce", 0.5, 0, function()
+		local mode = CurrentRound and CurrentRound()
+		if not mode or mode.name ~= "hmcd" then return end
+
+		for _, ply in player.Iterator() do
+			if ply:Alive() and HMCDWantsRubberGloves(ply) then
+				HMCDPutOnRubberGloves(ply)
+				if IsValid(ply.FakeRagdoll) then HMCDPutOnRubberGloves(ply.FakeRagdoll) end
+			end
+		end
+	end)
+
+	-- zc_gloves_debug: prints what the glove code sees on YOUR character (console)
+	concommand.Add("zc_gloves_debug", function(ply)
+		if not IsValid(ply) then return end
+		local function out(t) ply:PrintMessage(HUD_PRINTCONSOLE, t) end
+
+		out("---- zc_gloves_debug ----")
+		out("model: " .. ply:GetModel())
+		out("should wear gloves: " .. tostring(HMCDWantsRubberGloves(ply)) .. "   (profession: " .. tostring(ply.Profession) .. ", traitor: " .. tostring(ply.isTraitor) .. ")")
+
+		local hands, gloves = HMCDFindHandsSubmodel(ply, "medical_gloves")
+		if hands then
+			out("HANDS bodygroup #" .. hands .. ", currently option " .. ply:GetBodygroup(hands) .. ". Options:")
+			for _, bg in ipairs(ply:GetBodyGroups()) do
+				if bg.id == hands then
+					for index, name in SortedPairs(bg.submodels) do out("    " .. index .. " = " .. string.sub(tostring(name), 1, 120)) end
+				end
+			end
+		else
+			out("HANDS bodygroup: none on this model")
+		end
+		out("medical_gloves mesh available: " .. tostring(gloves ~= nil))
+
+		for i, m in ipairs(ply:GetMaterials()) do
+			local sub = ply:GetSubMaterial(i - 1)
+			out(string.sub(string.format("  material %d: %s%s", i - 1, m, sub ~= "" and ("   -> " .. sub) or ""), 1, 240))
+		end
+		out("-------------------------")
+	end)
+
+	-- zc_gloves_scan: admin/host only. Tries the gloves on every model in the appearance
+	-- menu (on a hidden temporary prop) and prints which method each model gets.
+	concommand.Add("zc_gloves_scan", function(ply)
+		if IsValid(ply) and not (ply:IsAdmin() or ply:IsListenServerHost()) then return end
+		local function out(t)
+			t = string.sub(t, 1, 240)
+			if IsValid(ply) then ply:PrintMessage(HUD_PRINTCONSOLE, t) else print(t) end
+		end
+
+		local models = hg and hg.Appearance and hg.Appearance.PlayerModels
+		if not istable(models) then out("zc_gloves_scan: no appearance model list found") return end
+
+		local list = {}
+		for sex, group in pairs(models) do
+			if istable(group) then
+				for name, info in pairs(group) do
+					local mdl = istable(info) and info.mdl or info
+					if isstring(mdl) then list[#list + 1] = {name = tostring(name), mdl = mdl} end
+				end
+			end
+		end
+		table.SortByMember(list, "name", true)
+
+		out("---- zc_gloves_scan: " .. #list .. " models ----")
+		local counts = {}
+		for _, m in ipairs(list) do
+			local result
+			if not util.IsValidModel(m.mdl) then
+				result = "MODEL NOT FOUND"
+			else
+				local ent = ents.Create("prop_dynamic")
+				if IsValid(ent) then
+					ent:SetModel(m.mdl)
+					local method = HMCDPutOnRubberGloves(ent)
+					result = method
+					ent:Remove()
+				else
+					result = "could not create test prop"
+				end
+			end
+			local kind = string.gsub(result, " %(.*%)$", "")
+			counts[kind] = (counts[kind] or 0) + 1
+			out(string.format("%-26s %-44s %s", m.name, m.mdl, result))
+		end
+		local summary = {}
+		for k, v in SortedPairs(counts) do summary[#summary + 1] = k .. ": " .. v end
+		out("summary: " .. table.concat(summary, ", "))
+		out("-------------------------")
+	end)
+
+	-- zc_gloves_test: admin/host only, puts the gloves on you right now regardless of role
+	concommand.Add("zc_gloves_test", function(ply)
+		if not IsValid(ply) or not (ply:IsAdmin() or ply:IsListenServerHost()) then return end
+		ply:PrintMessage(HUD_PRINTCONSOLE, "zc_gloves_test result: " .. HMCDPutOnRubberGloves(ply))
+	end)
+end
+
+function MODE.IsArsonistRole(subrole)
+	return subrole == "traitor_arsonist" or subrole == "traitor_arsonist_soe"
+end
+
+function MODE.IsImpostorRole(subrole)
+	return subrole == "traitor_impostor" or subrole == "traitor_impostor_soe"
+end
+
+local function HMCDFinishTraitorLoadout(ply, soe)
+	if soe then
+		ply:Give("weapon_walkie_talkie")
+		ply.organism.recoilmul = 1
+	end
+
+	local inv = ply:GetNetVar("Inventory", {})
+	inv["Weapons"] = inv["Weapons"] or {}
+	inv["Weapons"]["hg_flashlight"] = true
+
+	ply:SetNetVar("Inventory", inv)
+end
+
+local function HMCDGiveArsonistLoadout(ply, soe)
+	local molotov = ply:Give("weapon_hg_molotov_tpik")
+	if IsValid(molotov) then
+		molotov.count = 2
+	end
+
+	ply:Give("weapon_matches")
+	ply:Give("weapon_kitchenknife")
+
+	HMCDFinishTraitorLoadout(ply, soe)
+end
+
+local function HMCDGiveImpostorLoadout(ply, soe)
+	-- looks like a medic's kit, minus the gear that actually saves lives
+	ply:Give("weapon_bigbandage_sh")
+	ply:Give("weapon_painkillers")
+	ply:Give("weapon_tourniquet")
+	ply:Give("weapon_scalpel")
+	ply:Give("weapon_traitor_poison1")
+
+	MODE.ApplyMedicGloves(ply)
+	HMCDFinishTraitorLoadout(ply, soe)
+end
+
 MODE.SubRoles = {
 	--=\\Traitor
 	--==\\
@@ -796,6 +1085,78 @@ A limited tranquilizer, hammer and misdirection tools help you isolate prey with
 			ply:SetNetVar("Inventory", inv)
 		end,
 	},
+	["traitor_hunter"] = {
+		Name = "Hunter",
+		Description = [[A patient predator who reads the ground and strikes from range.
+You see fresh footprints left by everyone who isn't a traitor, for a few seconds after they walk past.
+Follow the tracks to isolated prey, then finish them with your concealed crossbow.
+The crossbow is silent and hits very hard, but you only carry a handful of bolts and it reloads slowly.
+Your grappling hook takes you onto rooftops and ledges for a better angle; the motion detector warns you of anyone nearby.]],
+		Objective = "You are the Hunter. Track your prey by their footprints and take them down from range.",
+		SpawnFunction = function(ply)
+			HMCDGiveHunterLoadout(ply, false)
+		end,
+	},
+	["traitor_hunter_soe"] = {
+		Name = "Hunter",
+		Description = [[A patient predator who reads the ground and strikes from range.
+You see fresh footprints left by everyone who isn't a traitor, for a few seconds after they walk past.
+Follow the tracks to isolated prey, then finish them with your concealed crossbow.
+The crossbow is silent and hits very hard, but you only carry a handful of bolts and it reloads slowly.
+Your grappling hook takes you onto rooftops and ledges for a better angle; the motion detector warns you of anyone nearby.]],
+		Objective = "You are the Hunter. Track your prey by their footprints and take them down from range.",
+		SpawnFunction = function(ply)
+			HMCDGiveHunterLoadout(ply, true)
+		end,
+	},
+	["traitor_arsonist"] = {
+		Name = "Arsonist",
+		Description = [[A firestarter who turns rooms into traps.
+You carry two molotovs, matches and a kitchen knife.
+Fire blocks doors and corridors, flushes people out of hiding and keeps burning after you leave.
+Fire does not care who it burns: stay out of your own flames.
+You have no ranged weapon, so plan the fire before you start it.]],
+		Objective = "You are the Arsonist. Use fire to trap, scatter and finish your victims.",
+		SpawnFunction = function(ply)
+			HMCDGiveArsonistLoadout(ply, false)
+		end,
+	},
+	["traitor_arsonist_soe"] = {
+		Name = "Arsonist",
+		Description = [[A firestarter who turns rooms into traps.
+You carry two molotovs, matches and a kitchen knife.
+Fire blocks doors and corridors, flushes people out of hiding and keeps burning after you leave.
+Fire does not care who it burns: stay out of your own flames.
+You have no ranged weapon, so plan the fire before you start it.]],
+		Objective = "You are the Arsonist. Use fire to trap, scatter and finish your victims.",
+		SpawnFunction = function(ply)
+			HMCDGiveArsonistLoadout(ply, true)
+		end,
+	},
+	["traitor_impostor"] = {
+		Name = "Impostor",
+		Description = [[A traitor posing as the Medic.
+You wear the same rubber gloves as the real Medic and carry a convincing medical kit.
+Your "treatment" can be a scalpel or a tetrodotoxin syringe instead of a bandage.
+There is usually also a real Medic, so two people will have rubber gloves; make sure they trust you, not them.
+You have almost no combat gear: if you are exposed, you are in trouble.]],
+		Objective = "You are the Impostor. Pose as the Medic and make your treatment the last thing they feel.",
+		SpawnFunction = function(ply)
+			HMCDGiveImpostorLoadout(ply, false)
+		end,
+	},
+	["traitor_impostor_soe"] = {
+		Name = "Impostor",
+		Description = [[A traitor posing as the Medic.
+You wear the same rubber gloves as the real Medic and carry a convincing medical kit.
+Your "treatment" can be a scalpel or a tetrodotoxin syringe instead of a bandage.
+There is usually also a real Medic, so two people will have rubber gloves; make sure they trust you, not them.
+You have almost no combat gear: if you are exposed, you are in trouble.]],
+		Objective = "You are the Impostor. Pose as the Medic and make your treatment the last thing they feel.",
+		SpawnFunction = function(ply)
+			HMCDGiveImpostorLoadout(ply, true)
+		end,
+	},
 	--[[
 	 ["traitor_demoman"] = {
 		 Name = "Shaid",
@@ -881,6 +1242,8 @@ MODE.Professions = {
 					end)
 				end
 			end
+
+			MODE.ApplyMedicGloves(ply)
 		end,
 	},
 	["lucky_guy"] = {
@@ -990,8 +1353,29 @@ MODE.Professions = {
 	},
 	["cook"] = {
 		Name = "Cook",
+		Objective = "You are the Cook. Your kitchen knife is the only blade most people won't question.",
+		Loadout = {
+			"weapon_kitchenknife",
+		},
 		SpawnFunction = function(ply)
-			--; It's a bad practice to give professions any weapons or tools
+			for _, weapon_class in ipairs(MODE.Professions.cook.Loadout) do
+				ply:Give(weapon_class)
+			end
+		end,
+	},
+	["security_guard"] = {
+		Name = "Security Guard",
+		Objective = "You are the Security Guard. Detain suspects with your tonfa, pepper spray and handcuffs; a cuffed traitor can't win.",
+		Loadout = {
+			"weapon_hg_tonfa",
+			"weapon_pepperspray_tpik",
+			"weapon_handcuffs",
+		},
+		MaxPlayers = 1,
+		SpawnFunction = function(ply)
+			for _, weapon_class in ipairs(MODE.Professions.security_guard.Loadout) do
+				ply:Give(weapon_class)
+			end
 		end,
 	},
 	["builder"] = {
@@ -1027,6 +1411,9 @@ MODE.RoleChooseRoundTypes = {
 			["traitor_lastmanstanding"] = true,
 			["traitor_stalker"] = true,
 			["traitor_revenant"] = true,
+			["traitor_hunter"] = true,
+			["traitor_arsonist"] = true,
+			["traitor_impostor"] = true,
 		},
 		Professions = {
 			["medic"] = {
@@ -1042,6 +1429,9 @@ MODE.RoleChooseRoundTypes = {
 				Chance = 1,
 			},
 			["thug"] = {
+				Chance = 1,
+			},
+			["security_guard"] = {
 				Chance = 1,
 			},
 			["huntsman"] = {
@@ -1109,6 +1499,9 @@ MODE.RoleChooseRoundTypes = {
 			["traitor_lastmanstanding_soe"] = true,
 			["traitor_stalker_soe"] = true,
 			["traitor_revenant_soe"] = true,
+			["traitor_hunter_soe"] = true,
+			["traitor_arsonist_soe"] = true,
+			["traitor_impostor_soe"] = true,
 			-- ["traitor_demoman_soe"] = true,
 		},
 		Professions = {
@@ -1125,6 +1518,9 @@ MODE.RoleChooseRoundTypes = {
 				Chance = 1,
 			},
 			["thug"] = {
+				Chance = 1,
+			},
+			["security_guard"] = {
 				Chance = 1,
 			},
 			["huntsman"] = {

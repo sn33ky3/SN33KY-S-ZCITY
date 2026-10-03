@@ -414,7 +414,13 @@ local traitorLoadoutText = {
 	traitor_lastmanstanding = "Concealed De Lisle + 20 rounds\nBrass knuckles\nFlashlight\nFinal Stand: halved De Lisle recoil and handling times",
 	traitor_lastmanstanding_soe = "Concealed De Lisle + 20 rounds\nNail gun\nSling\nBrass knuckles\nFlashlight, SOE recoil control\nFinal Stand: halved De Lisle recoil and handling times",
 	traitor_stalker = "Wall camouflage activated with Reload\nSonar marking, Prey Sense and Silent Pursuit\nLimited tranquilizer and SOG knife\nDecoy grenade and one-use death decoy\nHammer + 4 nails\nFlashlight\nFirst marked hit staggers, drains stamina and deals bonus damage",
-	traitor_stalker_soe = "Wall camouflage activated with Reload\nSonar marking, Prey Sense and Silent Pursuit\nLimited tranquilizer and SOG knife\nWalkie-talkie\nDecoy grenade and one-use death decoy\nHammer + 4 nails\nFlashlight\nFirst marked hit staggers, drains stamina and deals bonus damage"
+	traitor_stalker_soe = "Wall camouflage activated with Reload\nSonar marking, Prey Sense and Silent Pursuit\nLimited tranquilizer and SOG knife\nWalkie-talkie\nDecoy grenade and one-use death decoy\nHammer + 4 nails\nFlashlight\nFirst marked hit staggers, drains stamina and deals bonus damage",
+	traitor_hunter = "Concealed homemade crossbow + 6 bolts\nSOG knife, grappling hook\nMotion detector, sling, flashlight\nTracker: see fresh footprints of non-traitors",
+	traitor_hunter_soe = "Concealed homemade crossbow + 6 bolts\nSOG knife, grappling hook, walkie-talkie\nMotion detector, sling, flashlight\nTracker: see fresh footprints of non-traitors",
+	traitor_arsonist = "2 molotovs\nMatches\nKitchen knife\nFlashlight",
+	traitor_arsonist_soe = "2 molotovs\nMatches\nKitchen knife\nWalkie-talkie\nFlashlight",
+	traitor_impostor = "Rubber gloves like the real Medic\nBandage, painkillers, tourniquet\nScalpel\nTetrodotoxin syringe\nFlashlight",
+	traitor_impostor_soe = "Rubber gloves like the real Medic\nBandage, painkillers, tourniquet\nScalpel\nTetrodotoxin syringe\nWalkie-talkie\nFlashlight",
 }
 
 local function getLoadoutText(role)

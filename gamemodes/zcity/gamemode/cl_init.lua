@@ -1952,13 +1952,18 @@ function GM:ScoreboardShow()
 	footer:SetPaintBackground(false)
 
 	local linkButtons = {
-		{label = "SUPPORT US", accent = color_gold, icon = "icon16/heart.png", tooltip = "Support VOTTUR'S ZCITY on Ko-fi", url = "https://ko-fi.com/votturzcity"},
-		{label = "DISCORD", accent = Color(CRT_R, CRT_G, CRT_B), icon = "icon16/comments.png", tooltip = "Join the Discord", url = "https://discord.gg/votturzcity"},
-		{label = "GUIDE", accent = color_pink, icon = "icon16/book.png", tooltip = "Open Z-City Guide", url = "https://docs.google.com/document/d/1oVOleCQSrbfWddLKOgjAKD-EKpbS1dxCfNdCSUwNfn4"},
+		{label = "SUPPORT US", accent = color_gold, icon = "icon16/heart.png", tooltip = "Support " .. ((ZC_BRANDING and ZC_BRANDING.name or "") .. " " .. (ZC_BRANDING and ZC_BRANDING.suffix or "")), url = ZC_BRANDING and ZC_BRANDING.support or ""},
+		{label = "DISCORD", accent = Color(CRT_R, CRT_G, CRT_B), icon = "icon16/comments.png", tooltip = "Join the Discord", url = ZC_BRANDING and ZC_BRANDING.discord or ""},
+		{label = "GUIDE", accent = color_pink, icon = "icon16/book.png", tooltip = "Open the Guide", url = ZC_BRANDING and ZC_BRANDING.guide or ""},
 		{label = "RULES", accent = color_rules, icon = "icon16/page_white_text.png", tooltip = "Server rules", cmd = {"ulx", "motd"}},
 		{label = "STORE", accent = color_store, icon = "icon16/cart.png", tooltip = "Open the in-game store", cmd = {"say", "!store"}},
-		{label = "WORKSHOP", accent = Color(180, 180, 180), icon = "icon16/world.png", tooltip = "Open the Workshop", url = "https://steamcommunity.com/sharedfiles/filedetails/?id=3715931702"},
+		{label = "WORKSHOP", accent = Color(180, 180, 180), icon = "icon16/world.png", tooltip = "Open the Workshop", url = ZC_BRANDING and ZC_BRANDING.workshop or ""},
 	}
+
+	-- hide link buttons whose URL isn't set in lua/homigrad/cl_branding.lua
+	for i = #linkButtons, 1, -1 do
+		if linkButtons[i].url == "" then table.remove(linkButtons, i) end
+	end
 
 	local footerBtns = {}
 	for _, info in ipairs(linkButtons) do

@@ -279,7 +279,7 @@ if CLIENT then
 					time = CurTime() + 3
 				end
 			end
-			draw.DrawText((plyMenu.Created + count + 3) < CurTime() and "" or txt, "ZCity_Small", w / 2, h / 2.8, Color(255,255,255,15), TEXT_ALIGN_CENTER)
+			draw.DrawText((ent.PAT_SearchMinigame or (plyMenu.Created + count + 3) < CurTime()) and "" or txt, "ZCity_Small", w / 2, h / 2.8, Color(255,255,255,15), TEXT_ALIGN_CENTER)
 		end
 		local count2 = 0
 		
@@ -309,7 +309,17 @@ if CLIENT then
 				button:DockMargin(5, 0, 2, 0)
 				button:SetSize(0,0)
 				--button:SetSize(sizeX / 5.8, sizeY / 5.8)
-				button.Created = CurTime() + (!ent.foundloot[i] and 2 or 0) + count2
+				if ent.PAT_SearchMinigame then
+					-- search minigame (sh_search_minigame.lua): items already found show instantly,
+					-- hidden ones stay hidden until the minigame reveals them (sets .Created = 0)
+					button.Created = ent.foundloot[i] and 0 or nil
+					if not ent.foundloot[i] then
+						plyMenu.PAT_Hidden = plyMenu.PAT_Hidden or {}
+						plyMenu.PAT_Hidden[#plyMenu.PAT_Hidden + 1] = button
+					end
+				else
+					button.Created = CurTime() + (!ent.foundloot[i] and 2 or 0) + count2
+				end
 				button.Think = function(self)
 					if self.Created and (self.Created < CurTime()) then
 						self:SetSize(sizeX / 5.8, sizeY / 5.8)
@@ -411,5 +421,8 @@ if CLIENT then
 			end
 		end
 	--plyMenu:SlideDown(0.5)
+		return plyMenu
 	end
+
+	hg.OpenInv = OpenInv -- exposed for the search minigame (sh_search_minigame.lua)
 end

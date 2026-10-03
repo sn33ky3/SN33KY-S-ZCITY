@@ -351,6 +351,7 @@ local HMCD_INNOCLASS_COMPLETES = {
     "huntsman",
     "lucky guy",
     "medic",
+    "security guard",
     "thug",
 }
 

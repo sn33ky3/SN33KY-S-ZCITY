@@ -2,11 +2,17 @@
 hg.PointShop = hg.PointShop or {}
 
 local function AltDonate()
+    local discord = ZC_BRANDING and ZC_BRANDING.discord or ""
+    if discord == "" then
+        Derma_Message("No workie", "Sorry...", "Close")
+        return
+    end
+
     Derma_Query(
         "No workie",
         "Sorry...",
         "Discord",
-        function() gui.OpenURL("https://discord.gg/votturzcity") end,
+        function() gui.OpenURL(discord) end,
         "Close"
     )
 end

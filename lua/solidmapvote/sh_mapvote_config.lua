@@ -981,27 +981,6 @@ SolidMapVote["Config"]["Specific Maps"] = {
         height = 358
     },
 	{
-        filename = "zc_vottur_day",
-        displayname = "VOTTUR'S CITY Day",
-        image = "https://images.steamusercontent.com/ugc/12318784542214988163/6E469D4D369C4E87CE708EEC76E422557CC8F16B/?imw=5000&imh=5000&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=false",
-        width = 637,
-        height = 358
-    },
-	{
-        filename = "zc_vottur_night",
-        displayname = "VOTTUR'S CITY Night",
-        image = "https://images.steamusercontent.com/ugc/16225326713038200949/316C8CAD9506C1AC90B996B7A91ED234FD804D74/?imw=5000&imh=5000&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=false",
-        width = 637,
-        height = 358
-    },
-    {
-        filename = "zc_vottur_tower",
-        displayname = "VOTTUR'S TOWER",
-        image = "https://images.steamusercontent.com/ugc/13858793403075668525/C5F2045E0777AF35BAA119330997110269709CFA/?imw=268&imh=268&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=false",
-        width = 268,
-        height = 268
-    },
-	{
         filename = "gm_home_alone",
         displayname = "Home Alone",
         image = "https://images.steamusercontent.com/ugc/11917605550046938/74FD21CCB04ADB8A16C4DD9E83E234F4C5324D76/?imw=5000&imh=5000&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=false",

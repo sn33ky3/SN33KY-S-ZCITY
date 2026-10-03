@@ -3072,7 +3072,12 @@ function MODE.SpawnPlayers(spawn_with_subroles)
                         if(current_ply.MainTraitor)then
                             local spawn_func = role_info.SpawnFunction
                             current_ply.SubRole = sub_role
-                            spawn_func(current_ply)
+                            -- RaySn33ky's Z-City: a broken role loadout must not abort
+                            -- spawning everyone else (that ends the round instantly)
+                            local ok, err = pcall(spawn_func, current_ply)
+                            if(!ok)then
+                                ErrorNoHalt("[HMCD] SpawnFunction of traitor role '" .. tostring(sub_role) .. "' failed: " .. tostring(err) .. "\n")
+                            end
                         end
                     end
                 end
