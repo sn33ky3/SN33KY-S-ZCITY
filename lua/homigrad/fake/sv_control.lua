@@ -600,6 +600,13 @@ hook.Add("Think", "Fake", function()
 		spine = ragdoll:GetPhysicsObjectNum(realPhysNum(ragdoll,1))
 		rhand = ragdoll:GetPhysicsObjectNum(realPhysNum(ragdoll,7))
 		lhand = ragdoll:GetPhysicsObjectNum(realPhysNum(ragdoll,5))
+		-- RaySn33ky: some ragdolls (custom playermodels, a model swapped after the
+		-- physics were built) don't have every physics bone the cache expects, and
+		-- GetPhysicsObjectNum returns nil. Fall back instead of erroring every tick.
+		if not IsValid(spine) then spine = getRagdollControlPhysics(ragdoll) end
+		if not IsValid(spine) then continue end
+		if not IsValid(rhand) then rhand = spine end
+		if not IsValid(lhand) then lhand = spine end
 		ang = spine:GetAngles()
 
 		local angles2 = -(-angles)
