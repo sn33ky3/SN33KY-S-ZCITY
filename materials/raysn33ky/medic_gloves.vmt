@@ -1,0 +1,12 @@
+"VertexLitGeneric"
+{
+	// Slate-blue surgical gloves, colour sampled from the "Payday 2 Gloves Fixed" texture.
+	// Used on models that don't have the 3D medical_gloves bodygroup (e.g. female models).
+	"$basetexture" "raysn33ky/medic_gloves"
+	"$halflambert" "1"
+
+	"$phong" "1"
+	"$phongexponent" "12"
+	"$phongboost" "0.3"
+	"$phongfresnelranges" "[0.1 0.2 0.5]"
+}

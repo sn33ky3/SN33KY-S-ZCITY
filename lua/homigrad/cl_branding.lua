@@ -19,7 +19,7 @@ ZC_BRANDING = {
 
 	-- Link under the credits. Point this at YOUR fork. Under the AGPL you need to
 	-- offer your modified source to players, and this link is how you do it.
-	github = "",
+	github = "https://github.com/sn33ky3/SN33KY-S-ZCITY",
 
 	-- Your Discord invite (main menu "Discord", scoreboard "DISCORD")
 	discord = "",
