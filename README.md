@@ -1,10 +1,10 @@
-# VOTTUR'S ZCITY
+# RaySn33ky'S ZCITY
 
 ![votturs](https://media.discordapp.net/attachments/1500507441677209702/1501234933417377944/votturs.gif?ex=69fb557b&is=69fa03fb&hm=e01ed235db59788c46511af177cb21411e90d16271fbc933c237fe407841f37f&=)
 
 ## About
 
-VOTTUR'S ZCITY is a Garry’s Mod server built around immersive systems, custom gameplay mechanics, and a continuously evolving player experience.
+RaySn33ky'S ZCITY is a Garry’s Mod server built around immersive systems, custom gameplay mechanics, and a continuously evolving player experience.
 
 Core focus:
 - Realistic, responsive in-game interactions
