@@ -69,13 +69,75 @@ end)
 hook.Add("ZB_PreRoundStart", "reset_spawns", function()
 	zb.ctspawn = nil
 	zb.tspawn = nil
+	zb.ZC_TeamSpawnPair = nil
 end)
+
+-- RaySn33ky's Z-City: maps without team spawn points (no CS spawns, nothing placed with the
+-- Point Editor) used to give each team an independent random spawn, which is often the same
+-- spot, so both teams spawned on top of each other. Now the second team gets a spot from
+-- the far end of the map instead.
+local ZC_MIN_TEAM_DIST = 768
+
+local function zcSpawnCandidates()
+	local c = {}
+	for _, p in ipairs(spawners) do c[#c + 1] = p end
+	for _, p in ipairs(zb.GetMapPoints("RandomSpawns") or {}) do
+		if istable(p) and isvector(p.pos) then c[#c + 1] = p.pos end
+	end
+	for _, area in ipairs(navmesh.GetAllNavAreas()) do
+		if not area:IsUnderwater() and area:GetSizeX() >= 48 and area:GetSizeY() >= 48 then
+			c[#c + 1] = area:GetCenter() + Vector(0, 0, 8)
+		end
+	end
+	return c
+end
+
+-- a spot far from `from`: random pick among the farthest 10% of candidates
+local function zcFarFrom(from, candidates)
+	local scored = {}
+	for _, p in ipairs(candidates) do scored[#scored + 1] = {p, p:DistToSqr(from)} end
+	if #scored == 0 then return nil end
+	table.sort(scored, function(a, b) return a[2] > b[2] end)
+	local pick = scored[math.random(math.max(1, math.floor(#scored * 0.1)))]
+	if pick[2] < ZC_MIN_TEAM_DIST * ZC_MIN_TEAM_DIST then return nil end   -- map too small to separate
+	return pick[1]
+end
+
+local function zcFillTeamSpawns(team0spawns, team1spawns)
+	local no0 = !team0spawns or !next(team0spawns)
+	local no1 = !team1spawns or !next(team1spawns)
+	if !no0 and !no1 then return team0spawns, team1spawns end
+
+	if !zb.ZC_TeamSpawnPair then
+		local cand = zcSpawnCandidates()
+		local a, b
+		if no0 and no1 then
+			if #cand >= 2 then
+				a = cand[math.random(#cand)]
+				b = zcFarFrom(a, cand)
+			end
+		elseif no0 then
+			b = team1spawns[math.random(#team1spawns)]
+			a = zcFarFrom(b, cand)
+		else
+			a = team0spawns[math.random(#team0spawns)]
+			b = zcFarFrom(a, cand)
+		end
+		zb.ZC_TeamSpawnPair = {a or false, b or false}
+	end
+
+	local pair = zb.ZC_TeamSpawnPair
+	if no0 and pair[1] then team0spawns = {pair[1]} end
+	if no1 and pair[2] then team1spawns = {pair[2]} end
+	return team0spawns, team1spawns
+end
 
 function zb:GetTeamSpawn(ply)
 	local team_ = ply:Team()
 
 	local team0spawns, team1spawns = CurrentRound():GetTeamSpawn()
-	
+	team0spawns, team1spawns = zcFillTeamSpawns(team0spawns, team1spawns)
+
 	if !team0spawns or !next(team0spawns) then
 		team0spawns = {zb:GetRandomSpawn()}
 	end

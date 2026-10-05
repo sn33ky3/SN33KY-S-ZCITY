@@ -107,7 +107,7 @@ SolidMapVote["Config"]["Enable UnVote"] = true
 SolidMapVote["Config"]["Vote Commands"] = {"!rtv", "/rtv", ".rtv"}
 
 -- Nomination Settings
-SolidMapVote["Config"]["Ignore Prefix"] = false
+SolidMapVote["Config"]["Ignore Prefix"] = true
 SolidMapVote["Config"]["Nomination Commands"] = {"!nominate", "/nominate", ".nominate"}
 SolidMapVote["Config"]["Allow Nominations"] = true
 SolidMapVote["Config"]["Nomination Permissions"] = function(ply) return true end

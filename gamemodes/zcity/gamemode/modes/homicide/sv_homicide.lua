@@ -2258,8 +2258,38 @@ function MODE:TraitorNeutralizedDelayActive()
 	return (CurTime() - latest) < self.TraitorKilledRoundEndDelay
 end
 
+-- RaySn33ky's Z-City: rounds sometimes ended the instant they started. The win check runs
+-- every second; if it lands while a side has nobody "actively participating" yet (still
+-- spawning, still loading in, organism not settled) it declares a winner immediately.
+-- Give every round a short grace period, and log exactly who was counted when a round
+-- tries to end early so the real cause shows up in the server console.
+MODE.RoundStartGrace = MODE.RoundStartGrace or 10
+MODE.EarlyEndLogWindow = MODE.EarlyEndLogWindow or 30
+
+local function HMCDLogEarlyEnd(mode, alive, winner, age)
+	if mode.HMCDEarlyEndLoggedFor == zb.ROUND_BEGIN then return end
+	mode.HMCDEarlyEndLoggedFor = zb.ROUND_BEGIN
+
+	print(string.format("[HMCD-EARLYEND] round tried to end %.1fs after start (winner=%s, traitors counted=%d, others counted=%d)",
+		age, tostring(winner), #alive[1], #alive[0]))
+	for _, ply in player.Iterator() do
+		local org = ply.organism
+		print(string.format("[HMCD-EARLYEND]   %s | team=%s traitor=%s alive=%s org=%s canmove=%s incap=%s cuffed=%s police=%s",
+			ply:Nick(), tostring(ply:Team()), tostring(ply.isTraitor == true), tostring(ply:Alive()),
+			tostring(org ~= nil), tostring(org and org.canmove), tostring(org and org.incapacitated),
+			tostring(ply:GetNetVar("handcuffed", false)), tostring(ply.isPolice == true)))
+	end
+end
+
 function MODE:ShouldRoundEnd()
-	local endround, winner = zb:CheckWinner(self:CheckAlivePlayers())
+	local alive = self:CheckAlivePlayers()
+	local endround, winner = zb:CheckWinner(alive)
+
+	if endround and zb.ROUND_BEGIN then
+		local age = CurTime() - zb.ROUND_BEGIN
+		if age < self.EarlyEndLogWindow then HMCDLogEarlyEnd(self, alive, winner, age) end
+		if age < self.RoundStartGrace then return false end
+	end
 
 	if endround and winner == 0 and self:RoundHasTraitors() and self:TraitorNeutralizedDelayActive() then
 		return false
@@ -3112,7 +3142,12 @@ function MODE.SpawnPlayers(spawn_with_subroles)
             local hands = current_ply:Give("weapon_hands_sh")
 
 			if(current_ply.Profession)then
-				MODE.ApplyProfessionLoadout(current_ply)
+				-- RaySn33ky's Z-City: same as traitor roles, a bad job loadout must not stop
+				-- the rest of the server from spawning
+				local ok, err = pcall(MODE.ApplyProfessionLoadout, current_ply)
+				if(!ok)then
+					ErrorNoHalt("[HMCD] Loadout for job '" .. tostring(current_ply.Profession) .. "' failed: " .. tostring(err) .. "\n")
+				end
 			end
 
 			if(current_ply.MainTraitor and MODE.IsJuggernautRole and MODE.IsJuggernautRole(current_ply.SubRole) and MODE.ApplyJuggernautStats)then
