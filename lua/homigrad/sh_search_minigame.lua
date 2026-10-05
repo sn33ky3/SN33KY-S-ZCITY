@@ -5,8 +5,8 @@
 		if PAT_SearchMinigame_OpenInv then PAT_SearchMinigame_OpenInv(ent) return end
 
 	The loot window opens straight away with a search bar above it. Items you
-	haven't found yet are hidden. A marker sweeps across the bar: press JUMP
-	(Space) or click the bar while the marker is inside the green zone and the
+	haven't found yet are hidden. A marker sweeps across the bar: left-click
+	the bar while the marker is inside the green zone and the
 	next hidden item appears in the loot window. Hitting the bright centre
 	finds two. Missing locks you out for a moment and (optionally) makes a
 	noise other players can hear.
@@ -98,20 +98,9 @@ local gradUp = Material("vgui/gradient-u")
 
 local activeBar
 
--- Jump is the search key while the bar is up. Swallowing the bind means you
--- don't hop around while searching, and it follows whatever key the player
--- has jump bound to.
-hook.Add("PlayerBindPress", "PAT_SearchMinigame", function(ply, bind, pressed)
-	if not IsValid(activeBar) then return end
-	if not string.find(bind, "+jump", 1, true) then return end
-	if pressed and activeBar.Attempt then activeBar:Attempt() end
-	return true
-end)
-
-local function jumpKeyName()
-	local key = input.LookupBinding("+jump")
-	return key and string.upper(key) or "SPACE"
-end
+-- Left mouse on the bar is the search input (see OnMousePressed below).
+-- Space is not used: Z-City closes the loot window on it.
+hook.Remove("PlayerBindPress", "PAT_SearchMinigame")
 
 local function countHidden(menu)
 	local n = 0
@@ -363,10 +352,10 @@ local function createBar(menu, ent)
 			draw.RoundedBox(2, w / 2 - lw / 2, fy + S(6), lw, S(4), COL.track)
 			draw.RoundedBox(2, w / 2 - lw / 2, fy + S(6), lw * left, S(4), COL.miss)
 		else
-			local key = jumpKeyName()
+			local key = "LMB"
 			surface.SetFont("PAT_Search_Key")
 			local kw, kh = surface.GetTextSize(key)
-			local label = "  stop the marker in the green zone"
+			local label = "  click when the marker is in the green zone"
 			surface.SetFont("PAT_Search_Small")
 			local lw = surface.GetTextSize(label)
 			local boxW = kw + S(14)
